@@ -3,11 +3,18 @@ import { Button } from "antd"
 import { Space, Table, Avatar } from 'antd';
 import { getListProduct } from "../apis/product";
 import moment from "moment";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 function ManageProductPage() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const page = queryParams.get('page') || 1;
+
     const { isLoading, data: listData, isError } = useQuery({
-        queryKey: ['product'],
-        queryFn: () => getListProduct({ page: 1 })
+        queryKey: ['product', page],
+        queryFn: () => getListProduct({ page: page })
     });
 
     if (isLoading) return <div>Loading...</div>;
@@ -77,16 +84,29 @@ function ManageProductPage() {
 
         return (
             <div>
-                <Table
-                    onRow={(record, rowIndex) => {
-                        return {
-                            onClick: (e) => {
+                <div className="flex justify-end mb-5">
+                    <Button>Thêm sản phẩm</Button>
+                </div>
+                <div>
+                    <Table
+                        onRow={(record, rowIndex) => {
+                            return {
+                                onClick: (e) => {
+                                }
                             }
-                        }
-                    }}
-                    columns={columns}
-                    dataSource={data} size="middle"
-                />
+                        }}
+                        pagination={{
+                            pageSize: listData.data.itemsPerPage,
+                            current: page,
+                            total: listData.data.total,
+                            onChange: (page) => {
+                                navigate(`/manage-product?page=${page}`)
+                            }
+                        }}
+                        columns={columns}
+                        dataSource={data} size="middle"
+                    />
+                </div>
             </div>
         )
     }

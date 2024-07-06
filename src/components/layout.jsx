@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
@@ -8,12 +8,23 @@ import {
     ProductOutlined,
     OrderedListOutlined
 } from '@ant-design/icons';
-import { Button, Layout, Menu, theme } from 'antd';
+import { Avatar, Button, Layout, Menu, Space, theme } from 'antd';
 const { Header, Sider, Content } = Layout;
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const MainLayout = ({ children }) => {
+    const navigate = useNavigate();
+
+    const { user } = useSelector((state) => state.auth);
+
+    useEffect(() => {
+        if (!user) {
+            navigate('/');
+        }
+    }, []);
+
     const { pathname } = useLocation();
 
     const items = [
@@ -57,8 +68,10 @@ const MainLayout = ({ children }) => {
             <Layout>
                 <Header
                     style={{
-                        padding: 0,
+                        padding: '0',
                         background: colorBgContainer,
+                        display: 'flex',
+                        justifyContent: 'space-between'
                     }}
                 >
                     <Button
@@ -71,6 +84,10 @@ const MainLayout = ({ children }) => {
                             height: 64,
                         }}
                     />
+                    <Space style={{ paddingRight: 12 }}>
+                        <Avatar src={user.avatar} alt={user.fullname} />
+                        <span>Xin chào, {user.fullname}</span>
+                    </Space>
                 </Header>
                 <Content
                     style={{

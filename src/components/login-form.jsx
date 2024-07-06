@@ -1,12 +1,56 @@
-import { Button, Checkbox, Form, Input } from 'antd';
+import { Button, Form, Input, notification } from 'antd';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { signInFailure, signInStart, signInSuccess } from '../redux/slice/authSlice';
+import { signInApi } from '../apis/user';
+import { useEffect } from 'react';
 
 function LoginForm() {
-    const onFinish = (values) => {
-        console.log('Success:', values);
+    const navigate = useNavigate();
+
+    const dispatch = useDispatch();
+
+    const { isLoading, error } = useSelector((state) => state.auth);
+
+    const onFinish = async (values) => {
+        try {
+            dispatch(signInStart());
+
+            const res = await signInApi(values);
+
+            if (res.data.success === false) {
+                dispatch(signInFailure(res.data));
+                return;
+            } else {
+                if (res.data?.user?.role === 'admin') {
+                    dispatch(signInSuccess(res.data));
+                    navigate('/dashboard');
+                } else {
+                    notification.warning({
+                        message: 'Bạn không có quyền truy cập',
+                        description: 'Vui lòng liên hệ với quản trị viên để đăng nhập',
+                        duration: 1,
+                    })
+                    return;
+                }
+            }
+        } catch (error) {
+            dispatch(signInFailure(error));
+        }
     };
     const onFinishFailed = (errorInfo) => {
         console.log('Failed:', errorInfo);
     };
+
+    useEffect(() => {
+        if (error) {
+            notification.error({
+                message: 'Đăng nhập không thành công',
+                description: error,
+                duration: 1,
+            })
+        }
+    }, [error])
 
     return (
         <Form

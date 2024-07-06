@@ -1,41 +1,58 @@
 import { Button, Modal } from "antd"
 import { Space, Table, Avatar } from 'antd';
 import { getListUsers } from "../apis/user";
-import { useQuery } from "@tanstack/react-query";
 import moment from "moment";
 import { useState } from "react";
 import UpdateUserForm from "../components/update-user-form";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
+import FormAddUser from "../components/form-add-user";
 
 function ManageUser() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const page = queryParams.get('page') || 1;
+
+    //Mở modal chỉnh sửa người dùng
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isUpdateFormData, setIsUpdateFormData] = useState(null);
 
-    // Các option để mở và đóng model
-    const showModal = (record) => {
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+    // Các option để mở và đóng model update
+    const showUpdateModal = (record) => {
         setIsUpdateFormData(record);
         setIsModalOpen(true);
     }
-    const handleOk = () => {
+    const handleUpdateFormOk = () => {
         setIsModalOpen(false);
     };
-    const handleCancel = () => {
+    const handleUpdateFormCancel = () => {
         setIsModalOpen(false);
     };
 
-    const fetchListUsers = async () => {
-        const res = await getListUsers();
+    // Các option để mở và đóng model add
+    const showAddModal = (record) => {
+        setIsAddModalOpen(true);
+    }
+    const handleAddFormOk = () => {
+        setIsAddModalOpen(false);
+    };
+    const handleAddFormCancel = () => {
+        setIsAddModalOpen(false);
+    };
+
+    const fetchListUsers = async (params) => {
+        const res = await getListUsers(params);
 
         return res.data;
     };
 
     const { isLoading, data: listData, isError } = useQuery({
-        queryKey: ['users'],
-        queryFn: fetchListUsers
+        queryKey: ['users', page],
+        queryFn: () => fetchListUsers({ page: page })
     });
-
-    if (isLoading) {
-        return <p>Loading...</p>
-    }
 
     if (isError) {
         return <p>Error fetching data</p>
@@ -74,14 +91,14 @@ function ManageUser() {
                 dataIndex: 'option',
                 render: (mess, record) => (
                     <Space>
-                        <Button onClick={() => showModal(record)}>Sửa</Button>
+                        <Button onClick={() => showUpdateModal(record)}>Sửa</Button>
                         <Button>Xóa</Button>
                     </Space>
                 )
             },
         ];
 
-        let data = listData.users.map(item => {
+        let data = listData?.users.map(item => {
             return {
                 key: item._id,
                 avatar: item.avatar,
@@ -95,11 +112,27 @@ function ManageUser() {
         return (
             <div>
                 <div className="flex justify-end mb-5">
-                    <Button>Thêm người dùng</Button>
+                    <Button onClick={showAddModal}>Thêm người dùng</Button>
                 </div>
-                <Table columns={columns} dataSource={data} size="middle" />
-                <Modal footer={false} title="Chỉnh sửa thông tin người dùng" open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+                <Table
+                    loading={isLoading}
+                    columns={columns}
+                    dataSource={data}
+                    size="middle"
+                    pagination={{
+                        pageSize: listData?.itemsPerPage,
+                        current: page,
+                        total: listData?.total,
+                        onChange: (page) => {
+                            navigate(`/manage-user?page=${page}`)
+                        }
+                    }}
+                />
+                <Modal footer={false} title="Chỉnh sửa thông tin người dùng" open={isModalOpen} onOk={handleUpdateFormOk} onCancel={handleUpdateFormCancel}>
                     <UpdateUserForm data={isUpdateFormData} />
+                </Modal>
+                <Modal footer={false} title="Thêm tài khoản" open={isAddModalOpen} onOk={handleAddFormOk} onCancel={handleAddFormCancel}>
+                    <FormAddUser />
                 </Modal>
             </div>
         )
